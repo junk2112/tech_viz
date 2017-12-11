@@ -1,7 +1,8 @@
-from geometry import Point
+from geometry import Point, Segment
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import sys
 
 
 class Curve:
@@ -33,11 +34,51 @@ class Curve:
     def draw(self):
         x = np.asarray([p.x for p in self.points])
         y = np.asarray([p.y for p in self.points])
-        plt.scatter(x, y)
-        plt.show()
+        plt.scatter(x, y, [2 for i in x])
+        # plt.show()
+
+    @staticmethod
+    def derivative(a1, a2, c1, c2):
+        return (a1.y + a2.y - c1.y - c2.y) / (a1.x + a2.x - c1.x - c2.x)
+
+    @staticmethod
+    def tangent(a1, a2, current, c1, c2):
+        try:
+            k = Curve.derivative(a1, a2, c1, c2)
+        except ZeroDivisionError:
+            return None
+        else:
+            b = current.y - k * current.x
+            return Segment.from_line_and_point(k, b, current)
+
+
+    def cross_segment(self, segment):
+        result = []
+        y = lambda x: segment.k * x + segment.b
+        def min_p(points, delta=0.1):
+            r = []
+            dists = [Segment(p, Point(p.x, y(p.x))).len for p in points]
+            m_v = min(dists)
+            if m_v < delta:
+                r.append(points[dists.index(m_v)])
+            return r
+        result += min_p(self.points)
+        if result:
+            index = self.points.index(result[0])
+            points = self.points[:index] + self.points[index+1:]
+            result += min_p(points)
+        return result
+
+
 
     def y(self, x):
         raise NotImplementedError()
+
+    @staticmethod
+    def from_points(points):
+        result = Curve(1)
+        result.points = points
+        return result
 
 class Ellipse(Curve):
 
@@ -103,10 +144,10 @@ class Oval(Curve):
         y_neg = list(filter(lambda p: p.y < 0, points))
         y_pos = sorted(y_pos, key=lambda p: p.p_angle)
         y_neg = sorted(y_neg, key=lambda p: p.p_angle, reverse=True)
-        y_pos, y_neg= self.filter_nearest(y_pos, self.step), self.filter_nearest(y_neg, self.step)
+        y_pos, y_neg = self.filter_nearest(y_pos, self.step), self.filter_nearest(y_neg, self.step)
         self.points = y_pos + y_neg
 
-    def filter_nearest(self, points, delta=0.001):
+    def filter_nearest(self, points, delta):
         result = [points[0]]
         for i in range(1, len(points)):
             current = points[i]
