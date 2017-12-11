@@ -51,13 +51,15 @@ class Curve:
             b = current.y - k * current.x
             return Segment.from_line_and_point(k, b, current)
 
-
     def cross_segment(self, segment):
         result = []
         y = lambda x: segment.k * x + segment.b
-        def min_p(points, delta=0.1):
+        def min_p(points, prev=None, delta=1):
             r = []
-            dists = [Segment(p, Point(p.x, y(p.x))).len for p in points]
+            if not prev:
+                dists = [Segment(p, Point(p.x, y(p.x))).len for p in points]
+            else:
+                dists = [Segment(p, Point(p.x, y(p.x))).len / Segment(p, prev).len for p in points]
             m_v = min(dists)
             if m_v < delta:
                 r.append(points[dists.index(m_v)])
@@ -66,10 +68,9 @@ class Curve:
         if result:
             index = self.points.index(result[0])
             points = self.points[:index] + self.points[index+1:]
-            result += min_p(points)
-        return result
-
-
+            result += min_p(points, prev=result[-1])
+        return list(sorted(result, key=lambda item: Segment(item, segment.p1).len))
+        # return result
 
     def y(self, x):
         raise NotImplementedError()
@@ -77,7 +78,7 @@ class Curve:
     @staticmethod
     def from_points(points):
         result = Curve(1)
-        result.points = points
+        result.points = list(points)
         return result
 
 class Ellipse(Curve):

@@ -96,23 +96,32 @@ class Helper:
     def get_inner_curve(oval, cross_point, wurf, step=1):
         curve = []
         for i in range(0, int(len(oval.points)), step):
-            # cross = oval.cross_segment(Segment(cross_point, oval.points[i]))
             index = i + int(len(oval.points)/2)
             if index >= len(oval.points):
                 index = i - int(len(oval.points)/2)
             cross = [oval.points[i], oval.points[index]]
 
             w = WURF.last_point(cross[0], cross_point, cross[1], wurf)
-            # print(w.value, WURF.last_point_1(cross[0], cross_point, cross[1], wurf).value)
-            # if w is None:
-            #     print('here')
-            #     continue
-            # print(w.p3, w.value)
-            p3 = w.p3
-            # x, y = Helper.points_to_x_y(cross + [p3])
-            # plt.scatter(x, y)
-            curve.append(p3)
+            curve.append(w.p3)
         return curve
+
+    @staticmethod
+    def wurf_mapping(first, second, main):
+        result = []
+        for i in range(0, len(first.points), 1):
+            window = Helper.window(i, first.points, 2)
+            tg = first.tangent(*window)
+            [p2, p4] = second.cross_segment(tg)
+            [p1, p5] = main.cross_segment(tg)
+            p3 = first.points[i]
+            [p1, p2, p3, p4, p5] = sorted([p1, p2, p3, p4, p5], key=lambda item: (item.x, item.y))
+            w1 = WURF(p1, p2, p3, p4)
+            w2 = WURF(p2, p3, p4, p5)
+            result.append(Point(w1.value, w2.value))
+            # x, y = Helper.points_to_x_y([p1, p2, p3, p4, p5])
+            # plt.scatter(x, y)
+        return result
+
 
     @staticmethod
     def main(oval, subplot=None):
@@ -126,22 +135,26 @@ class Helper:
         plt.scatter(x, y)
 
         curve = Helper.get_inner_curve(oval, cross_point, 2, 1)
+        first = Curve.from_points(tuple(curve))
         x, y = Helper.points_to_x_y(curve)
         plt.scatter(x, y, [2])
 
         curve = curve = Helper.get_inner_curve(oval, cross_point, 1.5, 1)
+        second = Curve.from_points(tuple(curve))
         x, y = Helper.points_to_x_y(curve)
         plt.scatter(x, y, [2])
 
+        wurf_map = Helper.wurf_mapping(first, second, oval)
+        return wurf_map
 
 
 if __name__ == '__main__':
     # w = WURF.last_point(Point(0, 0), Point(1, 0), Point(2, 0), 2)
     # print(w, w.value)
 
-    oval = Oval(0.1**3)
+    oval = Oval(0.001)
     print(len(oval.points))
-    Helper.main(oval, 211)
+    wurf_map_1 = Helper.main(oval, 231)
     # Helper.main(oval, None)
 
     projected = Curve.from_points(Projection(
@@ -149,8 +162,26 @@ if __name__ == '__main__':
         1, 2, 0,
         0, 0.1,
     ).transform(oval.points))
-    Helper.main(projected, 212)
+    wurf_map_2 = Helper.main(projected, 232)
 
+    projected_1 = Curve.from_points(Projection(
+        1.5, 1, 0,
+        1, 2, 0,
+        0.2, 0.1,
+    ).transform(oval.points))
+    wurf_map_3 = Helper.main(projected_1, 233)
+
+    plt.subplot(234)
+    x, y = Helper.points_to_x_y(wurf_map_1)
+    plt.scatter(x, y, [2])
+
+    plt.subplot(235)
+    x, y = Helper.points_to_x_y(wurf_map_2)
+    plt.scatter(x, y, [2])
+
+    plt.subplot(236)
+    x, y = Helper.points_to_x_y(wurf_map_3)
+    plt.scatter(x, y, [2])
 
     # Helper.draw_derivatives(oval.points, 10)
     # plt.subplot(222)
