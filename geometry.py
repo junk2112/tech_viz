@@ -1,9 +1,11 @@
 import math
+import numpy as np
 
 class Point:
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, parent=None):
         self.x, self.y = x, y
+        self.parent = parent
 
     def __str__(self):
         return "({}, {})".format(self.x, self.y)
@@ -57,12 +59,13 @@ class Segment:
         C2 = s2.p1.x * s2.p2.y - s2.p2.x * s2.p1.y
 
         result = None
-        if B1 * A2 - B2 * A1 and A1:
-            y = (C2 * A1 - C1 * A2) / (B1 * A2 - B2 * A1)
+        tmp = B1 * A2 - B2 * A1
+        if tmp and A1:
+            y = (C2 * A1 - C1 * A2) / (tmp)
             x = (-C1 - B1 * y) / A1
             result = Point(x, y)
-        elif B1 * A2 - B2 * A1 and A2:
-            y = (C2 * A1 - C1 * A2) / (B1 * A2 - B2 * A1)
+        elif tmp and A2:
+            y = (C2 * A1 - C1 * A2) / (tmp)
             x = (-C2 - B2 * y) / A2
             result = Point(x, y)
         # if result and not validate(result):
@@ -82,6 +85,10 @@ class Segment:
             (self.p1.y - self.p2.y) ** 2
         ) ** 0.5
 
+    @property
+    def center(self):
+        return Point((self.p1.x + self.p2.x) / 2, (self.p1.y + self.p2.y) / 2)
+
 
 class Projection:
 
@@ -94,10 +101,40 @@ class Projection:
         return Point(
             (self.a1 * p.x + self.a2 * p.y + self.a3) / (self.c1 * p.x + self.c2 * p.y + 1),
             (self.b1 * p.x + self.b2 * p.y + self.b3) / (self.c1 * p.x + self.c2 * p.y + 1),
+            p.parent,
         )
 
     def transform(self, points):
-        result = []
-        for p in points:
-            result.append(self.mapper(p))
-        return result
+        return map(self.mapper, points)
+
+class Frechet():
+    # http://www.kr.tuwien.ac.at/staff/eiter/et-archive/cdtr9464.pdf
+    @staticmethod
+    def _c(ca, i, j, P, Q):
+        if ca[i, j] > -1:
+            return ca[i, j]
+        elif i == 0 and j == 0:
+            ca[i, j] = Segment(P[0], Q[0]).len
+
+        elif i > 0 and j == 0:
+            ca[i, j] = max(Frechet._c(ca, i - 1, 0, P, Q), Segment(P[i], Q[0]).len)
+        elif i == 0 and j > 0:
+            ca[i, j] = max(Frechet._c(ca, 0, j - 1, P, Q), Segment(P[0], Q[j]).len)
+        elif i > 0 and j > 0:
+            ca[i, j] = max(
+                min(
+                    Frechet._c(ca, i - 1, j, P, Q),
+                    Frechet._c(ca, i - 1, j - 1, P, Q),
+                    Frechet._c(ca, i, j - 1, P, Q),
+                ),
+                Segment(P[i], Q[j]).len
+            )
+        else:
+            ca[i, j] = float("inf")
+        return ca[i, j]
+
+    @staticmethod
+    def dist(P, Q):
+        ca = np.ones((len(P), len(Q)))
+        ca = np.multiply(ca, -1)
+        return Frechet._c(ca, len(P) - 1, len(Q) - 1, P, Q)
