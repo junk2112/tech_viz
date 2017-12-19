@@ -165,8 +165,8 @@ class Helper:
                     [p1, p2, p3, p4, p5],
                     key=lambda item: (item.x*tg.k, item.y)
                 )
-                w1 = WURF(p1, p2, p4, p5)
-                w2 = WURF(p2, p3, p4, p5)
+                w1 = WURF(p1, p2, p3, p5)
+                w2 = WURF(p1, p2, p4, p5)
                 result.append(Point(w1.value, w2.value))
                 # x, y = Helper.points_to_x_y([p1, p2, p3, p4, p5])
                 # plt.scatter(x, y)
@@ -223,25 +223,25 @@ class Helper:
         projected_1 = Curve.from_proj(Projection(
             1.5, 1, 0,
             1, 2, 0,
-            0, 0.1,
+            0, 0.2,
         ), oval.points[0::2], step)
         print(len(projected_1.points))
         wurf_map_2 = Helper.main(projected_1, 242 + number)
         #
-        # projected_2 = Curve.from_proj(Projection(
-        #     1.5, 1, 0,
-        #     1, 2, 0,
-        #     0.2, 0.1,
-        # ), oval.points, step)
-        # print(len(projected_2.points))
-        # wurf_map_3 = Helper.main(projected_2, 243 + number)
-
         projected_2 = Curve.from_proj(Projection(
-            1.5, 1, 1,
-            1, 2, 1,
+            1.5, 1, 0,
+            1, 2, 0,
             0.2, 0.1,
         ), oval.points[1::2], step)
+        print(len(projected_2.points))
         wurf_map_3 = Helper.main(projected_2, 243 + number)
+
+        # projected_2 = Curve.from_proj(Projection(
+        #     1.5, 1, 1,
+        #     1, 2, 1,
+        #     0.2, 0.1,
+        # ), oval.points[1::2], step)
+        # wurf_map_3 = Helper.main(projected_2, 243 + number)
 
         # plt.subplot(244)
         # x, y = Helper.points_to_x_y(wurf_map_1)
@@ -278,8 +278,8 @@ if __name__ == '__main__':
     oval = Oval(e1, e2, center, step)
     m3, m4 = Helper.main_main(oval, 1)
 
-    print(Frechet.dist(m1, m3))
-    print(Frechet.dist(m2, m4))
+    # print(Frechet.dist(m1, m3))
+    # print(Frechet.dist(m2, m4))
 
     plt.show()
 
